@@ -22,9 +22,15 @@ class SpotifyApi:
         log.info("Spotify API initialization complete")
 
     def play_track_from_id(self, track_id : str):
-        self._spotify_endpoint.next_track()
-        self._spotify_endpoint.start_playback(uris=[track_id])
-        self._spotify_endpoint.next_track()
+
+        playback_state = self._spotify_endpoint.current_playback()
+        if playback_state is not None and playback_state.get('is_playing'):
+            self._spotify_endpoint.add_to_queue(track_id)
+            time.sleep(0.7) 
+            self._spotify_endpoint.next_track()
+        else:
+            self._spotify_endpoint.start_playback(uris=[track_id])
+
 
         log.info(f"Send play request for track {track_id}")
  
@@ -36,10 +42,17 @@ class SpotifyApi:
         if not result:
             log.info(f"Could not find {author} {title}")
             return ""
+        found_title = result[0]['name']
+        found_author = result[0]['artists'][0]['name']
+        
+        log.info(f"Spotify found and selected: {found_title} by {found_author}")
         return result[0]['uri']
 
     def play_track(self, title : str, author : str):
         self.play_track_from_id(self.search_for_track(title, author))
+
+    def skip_track(self):
+        self._spotify_endpoint.next_track()
 
 
 

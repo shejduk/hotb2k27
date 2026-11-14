@@ -28,14 +28,6 @@ EPSILON = 1e-12
 
 
 class LiveStreamAnalyzer(DataStreamContinuous):
-    """Extract calibrated valence, focus and energy features from a live EEG.
-
-    The class inherits connection and frame delivery from
-    :class:`DataStreamContinuous`. Its public output is a feature dictionary,
-    suitable as input to a recommender or a separately trained classifier;
-    feature values alone are not an emotion diagnosis.
-    """
-
     def __init__(
         self,
         device_name: str = "BA MINI 077",
@@ -114,7 +106,6 @@ class LiveStreamAnalyzer(DataStreamContinuous):
         return filtered
 
     def _process_data_frame(self, data_frame: np.ndarray) -> None:
-        """Process one BrainAccess frame; called by the inherited stream loop."""
 
         eeg_chunk = np.asarray(data_frame[: len(CHANNELS), :], dtype=float)
         if eeg_chunk.shape[0] != len(CHANNELS):
@@ -272,6 +263,6 @@ class LiveStreamAnalyzer(DataStreamContinuous):
         """Override this hook or provide ``on_features`` to consume features."""
 
         if self.on_features_callback is None:
-            log.info("EEG recommendation features: %s", features)
+            log.error("EEG recommendation features: %s", features)
         else:
             self.on_features_callback(features)

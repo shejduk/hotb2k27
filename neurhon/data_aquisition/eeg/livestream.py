@@ -9,6 +9,7 @@ import brainaccess.core.eeg_channel as eeg_channel
 from brainaccess.core.gain_mode import (
     GainMode,
 )
+from neurhon.logging.logger import log as log
 
 class DataStreamContinuous:
     def __init__(self,device_name="BA MINI 77",timeframe=4):
@@ -41,37 +42,36 @@ class DataStreamContinuous:
 
     def _process_data_frame(self, dataFrame):
 
-        print("Processing data_frame, shape ", dataFrame.shape)
-        print(dataFrame)
+        log.info(f"Processing data_frame, shape  {dataFrame.shape}")
+        log.info(dataFrame)
 
     def start_streaming(self):
         core.init()
         devices = core.scan()
-        print("Found devices:", len(devices))
-        print(f"Devices: {[device.name for device in devices]}")
+        log.info(f"Found devices: {len(devices)}")
+        log.info(f"Devices: {[device.name for device in devices]}")
 
 
         with EEGManager() as mgr:
-            print("Connecting to {}...".format(self._device_name))
+            log.info("Connecting to {}...".format(self._device_name))
             _status = mgr.connect(self._device_name)
             if _status > 0:
-                print("Failed to connect to device!")
+                log.error("Failed to connect to device!")
                 raise Exception("Connection to {} failed".format(self._device_name))
         
             # battery info
-            print(f"battery level: {mgr.get_battery_info().level} %")
+            log.info(f"battery level: {mgr.get_battery_info().level} %")
             device_features = mgr.get_device_features()
             eeg_channels_number = device_features.electrode_count()
-            print("Device has {} channels".format(eeg_channels_number))
+            log.info("Device has {} channels".format(eeg_channels_number))
 
             ch_nr = 0
             for i in range(0, eeg_channels_number):
-                mgr.set_channel_enabled(eeg_channel.ELECTRODE_MEASUREMENT + i, True)  # noqa
+                mgr.set_channel_enabled(eeg_channel.ELECTRODE_MEASUREMENT + i, True)
                 ch_nr += 1
                 mgr.set_channel_gain(
                     eeg_channel.ELECTRODE_MEASUREMENT + i, GainMode.X8
                 )
-            #mgr.set_channel_bias(eeg_channel.ELECTRODE_MEASUREMENT + i, True)
 
             eeg_enabled_nr = ch_nr
 
@@ -87,14 +87,14 @@ class DataStreamContinuous:
             self._queue_buffer = np.zeros((ch_nr, num_samples))
             print(self._queue_buffer.shape)
 
-            print("Device sample rate: {}".format(sample_rate))
+            log.info("Device sample rate: {}".format(sample_rate))
             mgr.set_callback_chunk(self._put_callback)
-            print("Data acquisition callback has been set")
+            log.info("Data acquisition callback has been set")
 
             mgr.load_config()
-            print("Manager config has been loaded")
+            log.info("Manager config has been loaded")
             mgr.start_stream()
-            print("Stream started, waiting for first signal window...")
+            log.info("Stream started, waiting for first signal window...")
             self._timer = time.time()
             while(True):
                 dataFrame = self._get_last_dataframe()

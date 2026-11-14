@@ -99,3 +99,22 @@ class SongScheduler:
                 return "relaxed"    
             else:
                 return "sad"
+
+    def is_track_ending_soon(self):
+        playback = self._spotify_api.current_playback()
+        if playback is None:
+            return False
+                
+        if not playback.get('is_playing'):
+            return False
+
+        item = playback.get('item')
+        if item is None:
+            return False
+
+        progress_ms = playback.get('progress_ms', 0)
+        duration_ms = item.get('duration_ms', 0)
+
+        time_left_ms = duration_ms - progress_ms
+
+        return time_left_ms <= (2 * 1000)

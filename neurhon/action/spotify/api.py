@@ -54,5 +54,8 @@ class SpotifyApi:
     def skip_track(self):
         self._spotify_endpoint.next_track()
 
+    def current_playback(self):
+        return self._spotify_endpoint.current_playback()
+
 
 

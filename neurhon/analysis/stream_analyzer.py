@@ -255,9 +255,13 @@ class LiveStreamAnalyzer(DataStreamContinuous):
 
         for key, value in features.items():
             self._feature_history.setdefault(key, deque(maxlen=self.smoothing_windows)).append(value)
-        return {
-            key: float(np.median(history)) for key, history in self._feature_history.items()
-        }
+        
+        smoothed = {key: float(np.median(history)) for key, history in self._feature_history.items()}
+        smoothed["Valence"] = float(1 / (1 + np.exp(-np.clip(smoothed["valence_faa_z"], -10, 10))))
+        smoothed["Focus"]   = float(1 / (1 + np.exp(-np.clip(smoothed["focus_pope_z"], -10, 10))))
+        smoothed["Energy"]  = float(1 / (1 + np.exp(-np.clip(smoothed["energy_score_z"], -10, 10))))
+        return smoothed
+
 
     def on_features(self, features: Features) -> None:
         """Override this hook or provide ``on_features`` to consume features."""

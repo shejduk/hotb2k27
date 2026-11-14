@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurhon"
+version = "0.0.0"
+dependencies = [
+    "brainaccess-board",
+    "brainaccess",
+    "rich",
+    "fastapi",
+    "uvicorn[standard]",
+    "windows-toasts; sys_platform == 'win32'"
+]
+
+[project.scripts]
+neurhon-run = "neurhon.entry:run"
+neurhon-ui = "neurhon.server.main:main"
+
+[tool.setuptools.packages.find]
+include = ["neurhon*"]
+
+[tool.setuptools.package-data]
+neurhon = ["ui/**/*"]

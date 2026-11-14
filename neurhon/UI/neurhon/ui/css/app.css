@@ -1,0 +1,612 @@
+/* neurhon UI styles: graphite and white, drawn from the rho mark.
+   Layout idea: a slim navigation rail on the left, one content column on the right.
+   No hues on purpose. --mood is the one accent (white for now, see USE_MOOD_COLORS in state.js).
+
+   Motion rule: everything below the "motion" section moves only under
+   prefers-reduced-motion: no-preference. Without it, changes cross-fade with opacity only. */
+
+@property --mood {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f2f2f0;
+}
+
+:root {
+  --bg: #141414;
+  --surface: #1c1c1d;
+  --surface-2: #262627;
+  --line: #323234;
+  --text: #f2f2f0;
+  --muted: #9a9a9d;
+  --faint: #67676b;
+  --accent: #f2f2f0;
+  --on-accent: #141414;
+  --mood: #f2f2f0;
+
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-body: Figtree, system-ui, sans-serif;
+
+  /* Surfaces get depth from a shadow ring plus a soft lift, not from a border. */
+  --ring: 0 0 0 1px rgb(255 255 255 / 0.07);
+  --lift: 0 1px 2px rgb(0 0 0 / 0.45), 0 14px 32px -14px rgb(0 0 0 / 0.6);
+
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-ambient: cubic-bezier(0.4, 0, 0.2, 1);
+
+  color-scheme: dark;
+  transition: --mood 1.4s ease;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(900px 560px at 80% -12%, rgb(255 255 255 / 0.06), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid var(--mood);
+  outline-offset: 2px;
+}
+
+a, button { -webkit-tap-highlight-color: transparent; }
+a { color: inherit; }
+
+/* ---------- the rho ---------- */
+
+.rho-mark,
+.rho-watermark {
+  background: currentColor;
+  -webkit-mask: url("../img/rho.png") center / contain no-repeat;
+  mask: url("../img/rho.png") center / contain no-repeat;
+}
+
+.rho-mark { display: block; flex: none; width: 26px; height: 26px; }
+
+.rho-watermark {
+  position: fixed;
+  right: -6vw;
+  bottom: -14vh;
+  width: min(78vh, 62vw);
+  aspect-ratio: 1;
+  color: var(--accent);
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---------- shell ---------- */
+
+.shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.rail {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 28px 18px;
+  border-right: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 10px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.nav { display: flex; flex-direction: column; gap: 4px; }
+
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition-property: background-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+.nav a[aria-current="page"] {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.nav svg { width: 20px; height: 20px; flex: none; }
+
+.rail-status {
+  margin-top: auto;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.status-line { display: flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+.dot.on { background: var(--accent); box-shadow: 0 0 0 3px rgb(242 242 240 / 0.18); }
+.dot.off { background: transparent; box-shadow: inset 0 0 0 1.5px var(--faint); }
+
+.view {
+  padding: 36px clamp(16px, 4vw, 48px) 56px;
+  max-width: 1180px;
+  width: 100%;
+  outline: none;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+.page-sub { color: var(--muted); margin: 0 0 24px; max-width: 62ch; }
+
+/* ---------- surfaces and controls ---------- */
+
+.card,
+.notice,
+.history-item,
+.toast,
+.break-offer {
+  border: 1px solid transparent; /* keeps an edge in forced-colors mode, where shadows vanish */
+  box-shadow: var(--ring), var(--lift);
+}
+
+.card {
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 20px;
+  min-width: 0;
+}
+.card-title { font-size: 14px; font-weight: 600; color: var(--muted); margin: 0 0 14px; }
+
+.notice {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: 13.5px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition-property: background-color, border-color, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+.btn[disabled], .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+.btn-primary {
+  background: var(--mood);
+  border-color: transparent;
+  color: var(--on-accent);
+}
+.btn-round { width: 56px; height: 56px; padding: 0; }
+.btn svg { width: 22px; height: 22px; }
+
+/* Play and pause live in the DOM together; the active one is shown. */
+.icon-swap { display: grid; place-items: center; }
+.icon-swap > svg { grid-area: 1 / 1; opacity: 0; }
+.icon-swap > svg[data-active="true"] { opacity: 1; }
+.icon-swap > svg { transition: opacity 150ms ease-out; }
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  cursor: pointer;
+  padding: 0;
+}
+.switch .knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text);
+}
+.switch[aria-checked="true"] { background: var(--mood); border-color: transparent; }
+.switch[aria-checked="true"] .knob { transform: translateX(20px); background: var(--on-accent); }
+
+.field, select.field {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  min-width: 0;
+}
+
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.hint { color: var(--muted); font-size: 13.5px; margin: 2px 0 0; }
+
+/* ---------- dashboard ---------- */
+
+.dash {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 20px;
+  align-items: stretch; /* prawa kolumna dorównuje wysokością dużej karty z nastrojem */
+}
+.dash-side { display: grid; gap: 20px; }
+.dash-side > .card { display: flex; flex-direction: column; }
+/* Signals: paski rozkładają się równo w całej karcie */
+.dash-side > .card:last-child > div { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+@media (min-width: 861px) {
+  /* dwie karty po prawej dzielą wysokość równo, razem tak wysoko jak karta z nastrojem */
+  .dash-side { grid-template-rows: 1fr 1fr; }
+  .dash-side > .card .controls { margin-top: auto; }
+}
+
+.mood-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(3.4rem, 8vw, 5.8rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  margin: 0 0 8px;
+  transition: opacity 150ms ease-out;
+}
+.mood-title.is-out { opacity: 0; }
+.mood-sub { color: var(--muted); margin: 0 0 18px; }
+
+.plane { display: block; width: 100%; height: auto; }
+.plane-bg { fill: rgb(255 255 255 / 0.02); stroke: var(--line); }
+.plane-axis { stroke: var(--line); stroke-dasharray: 3 5; }
+.plane-text { fill: var(--faint); font-size: 12px; font-family: var(--font-body); }
+.plane-dot-label {
+  fill: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  /* a thin outline in the surface color keeps the name readable over the axis lines */
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.plane-dot { filter: drop-shadow(0 0 10px rgb(242 242 240 / 0.55)); }
+.plane-dot .core { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.plane-dot .halo { fill: var(--accent); opacity: 0.16; }
+.plane-ripple {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.now-playlist { color: var(--muted); font-size: 13.5px; margin: 0 0 4px; }
+.now-title {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 1.05;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.now-artist { color: var(--muted); margin: 4px 0 18px; }
+.controls { display: flex; align-items: center; gap: 12px; }
+
+.meter-row { display: grid; gap: 6px; }
+.meter-row + .meter-row { margin-top: 14px; }
+.meter-head { display: flex; justify-content: space-between; gap: 12px; }
+.meter-value { font-variant-numeric: tabular-nums; color: var(--muted); }
+.meter { position: relative; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.meter > span { display: block; height: 100%; border-radius: 999px; background: var(--mood); }
+
+.meter-threshold {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--text);
+  opacity: 0.85;
+}
+
+/* ---------- break mode ---------- */
+
+/* Both layers stay in the DOM. They are hidden with visibility, so they leave the tab order
+   and can still animate out. The exit is shorter than the enter. */
+.break-offer,
+.break-overlay {
+  overscroll-behavior: contain;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 150ms ease-out, visibility 0s linear 150ms;
+}
+.break-offer.is-open,
+.break-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 300ms ease-out, visibility 0s;
+}
+
+.break-offer {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  z-index: 40;
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--surface);
+}
+.break-offer strong { font-family: var(--font-display); font-weight: 400; font-size: 26px; line-height: 1.1; }
+.break-offer-text { margin: 0; color: var(--muted); }
+.break-offer .controls { flex-wrap: wrap; }
+
+.break-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  /* The one place with a hue: a light blue screen for the break. Everything inside is dark on light. */
+  --text: #14202e;
+  --muted: #3f5a78;
+  --line: #8fb8e3;
+  --surface-2: #a8cdf3;
+  background: #bfdfff;
+  color: var(--text);
+}
+.break-overlay .btn { background: #14202e; border-color: transparent; color: #f2f2f0; }
+.break-overlay :focus-visible { outline-color: #14202e; }
+@media (hover: hover) {
+  .break-overlay .btn:hover { background: #1f3247; border-color: transparent; }
+}
+.break-overlay-inner { display: grid; justify-items: center; gap: 4px; text-align: center; }
+.break-countdown {
+  font-family: var(--font-body);
+  font-size: clamp(4rem, 16vw, 8rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 8px 0 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- history ---------- */
+
+.filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+
+.day-heading {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 24px 0 8px;
+}
+.history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.history-item {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 2fr) 130px minmax(0, 1.4fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface);
+}
+.history-time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.history-track { min-width: 0; }
+.history-track strong { display: block; overflow-wrap: anywhere; }
+.history-track span { color: var(--muted); font-size: 13.5px; }
+.history-reason { color: var(--muted); font-size: 13.5px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 13.5px;
+  width: fit-content;
+}
+.chip i { width: 8px; height: 8px; border-radius: 50%; display: block; background: var(--faint); }
+
+.empty {
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+  padding: 32px 24px;
+  color: var(--muted);
+}
+.empty strong { display: block; color: var(--text); font-size: 17px; margin-bottom: 4px; }
+.empty a { color: var(--text); font-weight: 600; }
+
+/* ---------- settings and extensions ---------- */
+
+.stack { display: grid; gap: 20px; max-width: 720px; }
+.map-grid { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px 14px; align-items: center; }
+.kv { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 6px 14px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+code, .code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--surface-2);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+/* ---------- toasts ---------- */
+
+.toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 8px;
+  z-index: 50;
+}
+.toast {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  max-width: 320px;
+}
+
+/* ---------- hover only where a pointer can hover ---------- */
+
+@media (hover: hover) {
+  .nav a:hover { background: var(--surface); color: var(--text); }
+  .btn:hover { border-color: var(--faint); }
+}
+
+/* ---------- narrow screens: rail becomes a bottom bar ---------- */
+
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .rail {
+    position: fixed;
+    inset: auto 0 0 0;
+    height: auto;
+    z-index: 20;
+    padding: 6px max(8px, env(safe-area-inset-right, 0px)) max(6px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+    border-right: 0;
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(10px);
+  }
+  .brand, .rail-status { display: none; }
+  .nav { flex-direction: row; justify-content: space-around; }
+  .nav a { flex-direction: column; gap: 2px; font-size: 12px; padding: 6px 10px; }
+  .view { padding-top: 24px; padding-bottom: 96px; }
+  .dash { grid-template-columns: minmax(0, 1fr); }
+  .history-item { grid-template-columns: 56px minmax(0, 1fr); gap: 8px 12px; }
+  .history-item .chip, .history-item .history-reason { grid-column: 2; }
+  .kv { grid-template-columns: minmax(0, 1fr); }
+  .toasts { bottom: 84px; }
+  .rho-watermark { right: -18vw; bottom: 6vh; width: min(70vh, 110vw); }
+}
+
+/* ---------- motion ----------
+   Entrances: opacity, 4px blur and 12px of travel over 300ms, staggered by 100ms.
+   Exits are shorter (150ms). Reduced motion keeps only the opacity part. */
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Without motion: sections fade in together and nothing travels. */
+.enter { animation: fade-in 200ms ease-out backwards; }
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes enter {
+    from { opacity: 0; filter: blur(4px); translate: 0 12px; }
+    to { opacity: 1; filter: blur(0); translate: 0 0; }
+  }
+  @keyframes ping {
+    from { opacity: 0.5; transform: scale(1); }
+    to { opacity: 0; transform: scale(3.8); }
+  }
+  @keyframes rho-breathe {
+    from { opacity: 0.05; scale: 1; }
+    to { opacity: 0.08; scale: 1.02; }
+  }
+
+  .enter, .brand {
+    animation: enter 300ms ease-out backwards;
+    animation-delay: calc(var(--i, 0) * 100ms);
+  }
+
+  /* ambient layer: the rho slowly breathes */
+  .rho-watermark { animation: rho-breathe 8s var(--ease-ambient) infinite alternate; }
+
+  /* primary layer: the dot glides, the bars grow */
+  .plane-pointer { transition: transform 0.95s cubic-bezier(0.3, 0.7, 0.3, 1); }
+  .meter > span { transition: width 0.9s var(--ease-ambient); }
+
+  /* secondary layer: a ripple leaves the dot when the mood changes */
+  .plane-ripple.is-pinging { animation: ping 600ms cubic-bezier(0.05, 0.7, 0.1, 1); }
+
+  /* mood name: leaves quickly (150ms), arrives slowly (300ms) */
+  .mood-title { transition: opacity 150ms ease-out, filter 150ms ease-out, translate 150ms ease-out; }
+  .mood-title.is-out { filter: blur(4px); translate: 0 -12px; }
+  .mood-title.is-in { animation: enter 300ms ease-out; }
+
+  /* a button gives way a little when pressed; disabled ones do not */
+  .btn { transition-property: background-color, border-color, opacity, scale; }
+  .btn:not(:disabled):not([aria-disabled="true"]):not(.btn-static):active { scale: 0.96; }
+
+  .switch .knob { transition: transform 150ms ease-out; }
+
+  /* play and pause cross-fade, scale 0.25 to 1 with a little blur */
+  .icon-swap > svg {
+    scale: 0.25;
+    filter: blur(4px);
+    transition: opacity 300ms var(--ease-out), scale 300ms var(--ease-out), filter 300ms var(--ease-out);
+  }
+  .icon-swap > svg[data-active="true"] { scale: 1; filter: blur(0); }
+
+  /* break layers: enter 300ms, exit 150ms and smaller */
+  .break-offer {
+    translate: 0 -12px;
+    filter: blur(4px);
+    transition: opacity 150ms ease-out, translate 150ms ease-out, filter 150ms ease-out, visibility 0s linear 150ms;
+  }
+  .break-offer.is-open {
+    translate: 0 0;
+    filter: blur(0);
+    transition: opacity 300ms ease-out, translate 300ms ease-out, filter 300ms ease-out, visibility 0s;
+  }
+  .break-overlay .break-overlay-inner {
+    translate: 0 12px;
+    filter: blur(4px);
+    transition: translate 150ms ease-out, filter 150ms ease-out;
+  }
+  .break-overlay.is-open .break-overlay-inner {
+    translate: 0 0;
+    filter: blur(0);
+    transition: translate 300ms ease-out, filter 300ms ease-out;
+  }
+}

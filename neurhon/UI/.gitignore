@@ -1,0 +1,7 @@
+**/**.histfile
+.vnv
+*.egg-info
+**/__pycache__
+.env
+CLAUDE.local.md
+data/

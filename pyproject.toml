@@ -8,7 +8,11 @@ version = "0.0.0"
 dependencies = [
     "brainaccess-board",
     "brainaccess",
-    "rich"
+    "rich",
+    "requests",
+    "pylast",
+    "python-dotenv",
+    "spotipy"
 ]
 
 [project.scripts]

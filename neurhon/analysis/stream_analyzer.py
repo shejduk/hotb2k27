@@ -239,11 +239,12 @@ class LiveStreamAnalyzer(DataStreamContinuous):
         # Lower posterior alpha relative to baseline is alpha suppression, hence
         # negating its z-score makes a larger value correspond to more energy.
         posterior_alpha_suppression = -z_scores["pz_alpha_power"]
-        energy = float(np.mean((
-            posterior_alpha_suppression,
-            z_scores["frontal_beta_alpha_ratio"],
-            z_scores["frontal_hjorth_mobility"],
-        )))
+        #energy = float(np.mean((
+            #posterior_alpha_suppression,
+            #z_scores["frontal_beta_alpha_ratio"],
+            #z_scores["frontal_hjorth_mobility"],
+        #)))
+        energy = z_scores['frontal_beta_alpha_ratio']
         features = {
             #"valence_faa": raw_metrics["valence_faa"],
             "valence_faa_z": z_scores["valence_faa"],

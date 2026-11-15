@@ -151,11 +151,14 @@ class LiveStreamAnalyzer(DataStreamContinuous):
         theta_frontal = float(theta[frontal].mean())
         alpha_f3 = float(alpha[index["F3"]])
         alpha_f4 = float(alpha[index["F4"]])
+        alpha_f7 = float(alpha[index["F7"]])
+        alpha_f8 = float(alpha[index["F8"]])
+                
 
         return {
             # Positive FAA conventionally indicates relatively greater left
             # frontal cortical activation because alpha power is inhibitory.
-            "valence_faa": float(np.log(alpha_f4 + EPSILON) - np.log(alpha_f3 + EPSILON)),
+            "valence_faa": (float(np.log(alpha_f4 + EPSILON) - np.log(alpha_f3 + EPSILON)))*0.5+(float(np.log(alpha_f8 + EPSILON) - np.log(alpha_f7 + EPSILON)))*0.5,
             # Pope engagement index: beta / (alpha + theta), pooled frontally.
             "focus_pope_index": beta_frontal / (alpha_frontal + theta_frontal + EPSILON),
             "pz_alpha_power": float(alpha[index["Pz"]]),

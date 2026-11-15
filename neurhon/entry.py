@@ -3,6 +3,9 @@ import neurhon.scheduler.scheduler as sch
 from neurhon.logging.logger import log as log
 import time
 import threading
+import neurhon.server.main as server_main
+
+
 def run():
    app = MainApp()
    app.run()
@@ -36,7 +39,9 @@ class MainApp:
     def run(self):
         monitor_thread = threading.Thread(target=self.spotify_monitor_loop, daemon=True)
         monitor_thread.start()
-
+        
+        ui_thread = threading.Thread(target=server_main.main,args=(self.scheduler,), daemon=True)
+        ui_thread.start()
         log.info("Initializing calibration. Stand still...")
         
         stream = ls.LiveStreamAnalyzer(

@@ -42,6 +42,11 @@ MOOD_LABELS = [
     MoodLabel("focused", "Focused", "#2fbf9b", energy=0.6, valence=0.6),
     MoodLabel("stressed", "Stressed", "#ef5b5b", energy=0.85, valence=0.2),
     MoodLabel("tired", "Tired", "#a58bd9", energy=0.15, valence=0.3),
+    # etykiety zwracane przez SongScheduler (neurhon/scheduler/scheduler.py)
+    MoodLabel("relaxed", "Relaxed", "#6fb7e9", energy=0.3, valence=0.75),
+    MoodLabel("energetic", "Energetic", "#f5a623", energy=0.85, valence=0.8),
+    MoodLabel("sad", "Sad", "#7a86b8", energy=0.25, valence=0.15),
+    MoodLabel("calibrating", "Calibrating", "#9aa0a6", energy=0.5, valence=0.5),
 ] # przykładowe stany emocjonalne które będziemy wykorzystywać.
 
 DATA_DIR = Path("data")

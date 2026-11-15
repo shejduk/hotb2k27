@@ -63,7 +63,9 @@ def create_app(
 ) -> FastAPI:
     """Build the app. It only knows the interfaces, never the real implementations."""
 
-    state = {"auto": False, "mood": None}
+    # prawdziwy kontroler (Spotify) ma autopilota w SongScheduler; mock zaczyna wyłączony
+    state = {"auto": bool(getattr(music, "auto_enabled", False)), "mood": None}
+    external_autopilot = bool(getattr(music, "manages_autoplay", False))
     clients: set[WebSocket] = set()
     mappings_path = data_dir / "mappings.json"
     settings_path = data_dir / "settings.json"
@@ -143,6 +145,7 @@ def create_app(
             and previous is not None
             and previous.label != current.label
             and music.is_playing()
+            and not external_autopilot
         ):
             music.next_track()
             log_change(f"auto: mood became {current.label}")
@@ -219,16 +222,17 @@ def create_app(
             "mood_source": type(mood).__name__,
             "music_source": type(music).__name__,
             "auto": state["auto"],
-            # "connected" stays False until the Spotify side implements the login.
             "spotify": {
                 "configured": bool(get_setting("SPOTIFY_CLIENT_ID")),
-                "connected": False,
+                "connected": music.connected() if hasattr(music, "connected") else False,
             },
         }
 
     @app.post("/api/auto")
     def set_auto(body: AutoBody):
         state["auto"] = body.enabled
+        if hasattr(music, "set_auto"):
+            music.set_auto(body.enabled)
         return {"auto": state["auto"]}
 
     @app.post("/api/break/enabled")

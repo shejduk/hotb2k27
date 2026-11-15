@@ -26,6 +26,7 @@ class SongScheduler:
             "ambient": ["ambient"]
         }
         self._mutex = Lock()
+        self._played_uris = deque(maxlen=50)  # URI ostatnio granych utworów (Spotify)
         self.last_picked = None  # (title, author) ostatnio wybranego utworu, dla optymistycznego UI
         self._lastfm_api.prewarm(list(self._mood_tags.values()), 200)
 
@@ -42,6 +43,7 @@ class SongScheduler:
         self.play_next_prediction()
 
     def play_next_prediction(self):
+        self.last_picked = None  # ustawiane dopiero, gdy utwór faktycznie zlecono do odtworzenia
         target_mood = self._calculate_target_mood()
         log.info(f"Target mood established as: {target_mood}")
         target_tags = self._mood_tags.get(target_mood, [target_mood])
@@ -54,42 +56,42 @@ class SongScheduler:
             return
         random.shuffle(candidates)
 
-        recent_played_titles = {song["title"].lower() for song in self._song_history}
-        
-        selected_track = None
+        if not self._pick_and_play(candidates, target_mood, avoid_recent=True):
+            log.warning("No fresh playable candidate! Clearing history and retrying once.")
+            self._song_history.clear()
+            self._played_uris.clear()
+            if not self._pick_and_play(candidates, target_mood, avoid_recent=False):
+                log.error("Scheduler could not find any track Spotify can play")
 
+    MAX_RESOLVE_TRIES = 8
+
+    def _pick_and_play(self, candidates, target_mood, avoid_recent):
+        recent_titles = {song["title"].lower() for song in self._song_history} if avoid_recent else set()
+        current_uri = self._spotify_api.current_uri()
+        tries = 0
         for track in candidates:
             title = track.get_title()
             author = track.get_artist().name
-            
-            if title.lower() not in recent_played_titles:
-                selected_track = (title, author)
-                break  
+            if title.lower() in recent_titles:
+                continue
+            if tries >= self.MAX_RESOLVE_TRIES:
+                break
+            tries += 1
 
-        if selected_track:
-            title, author = selected_track
+            uri = self._spotify_api.search_for_track(title, author)
+            # pusty wynik albo ten sam utwór co teraz gra => Spotify tylko zrestartowałby bieżący
+            if not uri or uri == current_uri or uri in self._played_uris:
+                log.info(f"Skipping candidate {title} by {author} (uri: {uri or 'not found'})")
+                continue
+
             log.info(f"Scheduler picked fresh track: {title} by {author}")
-            
-            self._song_history.append({
-                "title": title, 
-                "author": author, 
-                "target_mood": target_mood
-            })
-            
-            self.last_picked = (title, author)
-            self._spotify_api.play_track(title, author)
-            self._notify_track(title, author, target_mood)
-        else:
-            log.warning("All candidates were recently played! Clearing history to avoid infinite loop.")
-            self._song_history.clear() 
-            fallback_track = candidates[0]
-            title = fallback_track.get_title()
-            author = fallback_track.get_artist().name
-            
             self._song_history.append({"title": title, "author": author, "target_mood": target_mood})
+            self._played_uris.append(uri)
             self.last_picked = (title, author)
-            self._spotify_api.play_track(title, author)
+            self._spotify_api.play_track_from_id(uri)
             self._notify_track(title, author, target_mood)
+            return True
+        return False
 
     def _notify_track(self, title, author, mood_label):
         if self.on_track_change:

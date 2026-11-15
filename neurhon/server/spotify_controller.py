@@ -33,6 +33,7 @@ class SpotifyMusicController(MusicController):
         self.manual_skip_in_progress = False  # entry.py nie loguje wtedy wyboru schedulera
         self._autopilot_before_wake = None
         self._wake = threading.Event()
+        spotify_api.state_provider = self._cached_playback
         threading.Thread(target=self._poll_loop, daemon=True).start()
 
     # ---- odświeżanie w tle ----
@@ -49,6 +50,10 @@ class SpotifyMusicController(MusicController):
                 log.error(f"Spotify playback read failed: {error}")
             self._wake.wait(POLL_SECONDS)
             self._wake.clear()
+
+    def _cached_playback(self):
+        with self._lock:
+            return self._playback
 
     def _refresh_soon(self) -> None:
         self._wake.set()
@@ -106,7 +111,10 @@ class SpotifyMusicController(MusicController):
         try:
             self._scheduler.skip_current_song()
             picked = self._scheduler.last_picked
-            self._set_optimistic(playing=True, track=Track(*picked) if picked else None)
+            if picked:  # tylko gdy scheduler faktycznie zlecił utwór; inaczej UI pokazałby nieprawdę
+                self._set_optimistic(playing=True, track=Track(*picked))
+            else:
+                log.warning("Next: scheduler did not start any new track")
         except Exception as error:
             log.error(f"Skip failed: {error}")
         finally:

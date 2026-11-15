@@ -1,6 +1,7 @@
 import os
 import re
-import time 
+import time
+import threading
 
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -27,13 +28,56 @@ class SpotifyApi:
             log.warning("Empty track id, skipping playback request")
             return
 
+        previous_uri = self.current_uri()
+        device_id = self._device_id()
+        log.info(f"Playing {track_id} (now playing: {previous_uri}, device: {device_id})")
+
         # jedno żądanie zamiast current_playback + add_to_queue + sleep + next_track
         started = time.perf_counter()
-        self._spotify_endpoint.start_playback(uris=[track_id])
+        self._spotify_endpoint.start_playback(device_id=device_id, uris=[track_id], position_ms=0)
         log.info(f"[latency] start_playback {time.perf_counter() - started:.2f}s")
 
+        # w tle sprawdzamy, czy Spotify naprawdę przełączył utwór (nie blokuje UI)
+        threading.Thread(
+            target=self._verify_switch, args=(track_id, previous_uri, device_id), daemon=True
+        ).start()
 
-        log.info(f"Send play request for track {track_id}")
+    def _verify_switch(self, track_id, previous_uri, device_id):
+        """Jeśli po chwili nadal gra stary utwór (restart zamiast zmiany), użyj kolejki + next."""
+        try:
+            time.sleep(1.2)
+            playback = self._spotify_endpoint.current_playback() or {}
+            now_uri = (playback.get("item") or {}).get("uri")
+            if now_uri == track_id:
+                log.info("Spotify switched to the requested track")
+                return
+            if previous_uri and now_uri == previous_uri:
+                log.warning("Spotify ignored start_playback (old track still playing), falling back to queue + next")
+                self._spotify_endpoint.add_to_queue(track_id, device_id=device_id)
+                time.sleep(0.4)
+                self._spotify_endpoint.next_track(device_id=device_id)
+            else:
+                log.warning(f"Unexpected track after switch: wanted {track_id}, got {now_uri}")
+        except Exception as e:
+            log.error(f"Track switch verification failed: {e}")
+
+    # stan odtwarzacza z pamięci (ustawia kontroler), żeby nie robić dodatkowych żądań
+    state_provider = None
+
+    def _cached_playback(self):
+        try:
+            return (self.state_provider() if self.state_provider else None) or {}
+        except Exception:
+            return {}
+
+    def current_uri(self):
+        playback = self._cached_playback()
+        if not playback:
+            playback = self._spotify_endpoint.current_playback() or {}
+        return (playback.get("item") or {}).get("uri")
+
+    def _device_id(self):
+        return (self._cached_playback().get("device") or {}).get("id")
  
     def search_for_track(self, title : str, author : str):
 

@@ -22,6 +22,7 @@ class SpotifyApi:
         log.info("Spotify API initialization complete")
 
     def play_track_from_id(self, track_id : str):
+
         if not track_id:
             log.warning("Empty track id, skipping playback request")
             return
@@ -38,6 +39,7 @@ class SpotifyApi:
         log.info(f"Send play request for track {track_id}")
  
     def search_for_track(self, title : str, author : str):
+
         log.info(f"Searching for {title} by {author}")
         title = re.sub(r"\(.*?\)|\[.*?\]", "", title).strip()
         result=self._spotify_endpoint.search(q=f"{author} {title}", limit=1, type='track')

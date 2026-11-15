@@ -9,11 +9,11 @@ from threading import Lock
 
 class SongScheduler:
     def __init__(self, spotify_api=None, on_track_change=None):
+
         self._spotify_api = spotify_api or sp.SpotifyApi()
         self._lastfm_api =  lfmp.LastFMApi()
-        # callback(title, author, mood_label) wywoływany po każdym wyborze utworu
         self.on_track_change = on_track_change
-        self.autopilot = True  # False = scheduler nie wybiera utworów sam (np. trwa przerwa)
+        self.autopilot = True
         self._song_history = deque(maxlen=50)
         self._mood_history = []
 
@@ -137,11 +137,13 @@ class SongScheduler:
         time_left_ms = duration_ms - progress_ms
 
         return time_left_ms <= (2 * 1000)
+
     def get_mood(self):
         with self._mutex:
             last = self._mood_history[-1] if self._mood_history else None
         if last is None:
             return Mood("calibrating", {}, time.time())
+
         v, f, e = last.get("valence", 0.5), last.get("focus", 0.5), last.get("energy", 0.5)
         scores = {"valence": v, "focus": f, "energy": e}
         return Mood(self._get_mood_label(f, v, e), scores, time.time())

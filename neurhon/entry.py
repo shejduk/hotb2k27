@@ -14,7 +14,6 @@ from neurhon.server.spotify_controller import SpotifyMusicController
 
 DEFAULT_DEVICE = "BA EXG8 009"
 
-
 def run():
    app = MainApp()
    app.run()
@@ -24,7 +23,6 @@ class MainApp:
         self.is_running = True
         self.history = JsonlHistoryStore(HISTORY_PATH)
 
-        # jedna instancja Spotify wspólna dla schedulera i UI
         self.spotify = sp.SpotifyApi()
         self.scheduler = sch.SongScheduler(
             spotify_api=self.spotify, on_track_change=self.handle_track_change
@@ -32,9 +30,8 @@ class MainApp:
         self.music = SpotifyMusicController(self.spotify, self.scheduler)
 
     def handle_track_change(self, title, author, mood_label):
-        """Każdy wybór schedulera ląduje w historii widocznej w UI."""
         if self.music.manual_skip_in_progress:
-            return  # ręczny skip loguje już server/app.py
+            return
         mood = self.scheduler.get_mood()
         self.history.append(
             HistoryEntry(time.time(), Track(title, author), mood, f"auto: mood became {mood_label}")
@@ -52,13 +49,13 @@ class MainApp:
                     log.info("Choosing next song...")
                     self.scheduler.play_next_prediction()
 
-                    time.sleep(10)
+                    time.sleep(5)
             except Exception as e:
                 log.error(f"Spotify error: {e}")
 
 
     def run(self):
-        # UI startuje pierwsze: działa nawet gdy opaska się nie połączy
+
         ui_thread = threading.Thread(
             target=server_main.main,
             kwargs=dict(
@@ -93,7 +90,7 @@ class MainApp:
         except KeyboardInterrupt:
             stream.kill_yourself()
         except Exception as e:
-            log.error(f"EEG stream failed: {e}. UI and music keep running; Ctrl+C to quit.")
+            log.error(f"EEG stream failed: {e}. Press Ctrl+C to kill the rest")
             try:
                 while True:
                     time.sleep(1)

@@ -95,7 +95,7 @@ class SongScheduler:
             return "relaxed"
         
         with self._mutex:
-            recent = self._mood_history[-3:]
+            recent = self._mood_history[-10:]
         
         v = sum(m.get('valence', 0.5) for m in recent) / len(recent)
         f = sum(m.get('focus', 0.5) for m in recent) / len(recent)

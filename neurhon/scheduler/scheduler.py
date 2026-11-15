@@ -136,7 +136,7 @@ class SongScheduler:
 
         time_left_ms = duration_ms - progress_ms
 
-        return time_left_ms <= (2 * 1000)
+        return time_left_ms <= (5 * 1000)
 
     def get_mood(self):
         with self._mutex:

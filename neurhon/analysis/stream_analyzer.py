@@ -35,7 +35,7 @@ class LiveStreamAnalyzer(DataStreamContinuous):
         sampling_rate: float = 250,
         buffer_seconds: float = 5,
         calibration_windows: int = 10,
-        artifact_limit_uv: float = 2000,
+        artifact_limit_uv: float = 500,
         smoothing_windows: int = 5,
         on_features: MetricsCallback | None = None,
     ) -> None:
@@ -54,7 +54,7 @@ class LiveStreamAnalyzer(DataStreamContinuous):
         self.on_features_callback = on_features
 
         self.hp_params = {"order": 2, "fc": 1.0}
-        self.lp_params = {"order": 2, "fc": 40.0}
+        self.lp_params = {"order": 2, "fc": 30.0}
         self._filters_ready = False
 
         self.calibration_windows = calibration_windows
@@ -118,6 +118,9 @@ class LiveStreamAnalyzer(DataStreamContinuous):
             return
 
         filtered_chunk = self.filter_chunk(eeg_chunk)
+        # Re-reference to Common Average Reference across the 8 symmetric channels
+        filtered_chunk = filtered_chunk - np.mean(filtered_chunk, axis=0, keepdims=True)
+
         log.info(f"{np.max(np.abs(filtered_chunk))}")
         if np.max(np.abs(filtered_chunk)) > self.artifact_limit_uv:
             log.warning("Rejected frame exceeding %s µV artifact limit", self.artifact_limit_uv)

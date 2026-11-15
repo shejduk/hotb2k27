@@ -34,7 +34,7 @@ class LiveStreamAnalyzer(DataStreamContinuous):
         timeframe: float = 0.5,
         sampling_rate: float = 250,
         buffer_seconds: float = 5,
-        calibration_windows: int = 10,
+        calibration_windows: int = 20,
         artifact_limit_uv: float = 500,
         smoothing_windows: int = 5,
         on_features: MetricsCallback | None = None,

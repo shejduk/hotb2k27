@@ -12,8 +12,14 @@ dependencies = [
     "requests",
     "pylast",
     "python-dotenv",
-    "spotipy"
+    "spotipy",
+    "fastapi",
+    "uvicorn[standard]",
+    "windows-toasts; sys_platform == 'win32'"
+
 ]
 
 [project.scripts]
 neurhon-run = "neurhon.entry:run"
+neurhon-ui = "neurhon.server.main:main"
+

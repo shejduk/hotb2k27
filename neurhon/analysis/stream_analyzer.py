@@ -260,9 +260,9 @@ class LiveStreamAnalyzer(DataStreamContinuous):
             self._feature_history.setdefault(key, deque(maxlen=self.smoothing_windows)).append(value)
         
         smoothed = {key: float(np.median(history)) for key, history in self._feature_history.items()}
-        smoothed["Valence"] = float(1 / (1 + np.exp(-np.clip(smoothed["valence_faa_z"], -10, 10))))
-        smoothed["Focus"]   = float(1 / (1 + np.exp(-np.clip(smoothed["focus_pope_z"], -10, 10))))
-        smoothed["Energy"]  = float(1 / (1 + np.exp(-np.clip(smoothed["energy_score_z"], -10, 10))))
+        smoothed["valence"] = float(1 / (1 + np.exp(-np.clip(smoothed["valence_faa_z"], -10, 10))))
+        smoothed["focus"]   = float(1 / (1 + np.exp(-np.clip(smoothed["focus_pope_z"], -10, 10))))
+        smoothed["energy"]  = float(1 / (1 + np.exp(-np.clip(smoothed["energy_score_z"], -10, 10))))
         return smoothed
 
 

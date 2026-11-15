@@ -14,7 +14,7 @@ class MainApp:
     def __init__(self):
         self.scheduler = sch.SongScheduler()
         self.is_running = True
-        
+
         self.scheduler.play_next_prediction()
 
     def handle_eeg_data(self, features):
@@ -35,6 +35,7 @@ class MainApp:
                     time.sleep(10)
             except Exception as e:
                 log.error(f"Spotify error: {e}")
+
 
     def run(self):
         monitor_thread = threading.Thread(target=self.spotify_monitor_loop, daemon=True)

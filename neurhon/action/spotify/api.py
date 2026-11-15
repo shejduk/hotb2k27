@@ -22,6 +22,9 @@ class SpotifyApi:
         log.info("Spotify API initialization complete")
 
     def play_track_from_id(self, track_id : str):
+        if not track_id:
+            log.warning("Empty track id, skipping playback request")
+            return
 
         playback_state = self._spotify_endpoint.current_playback()
         if playback_state is not None and playback_state.get('is_playing'):
@@ -53,6 +56,10 @@ class SpotifyApi:
 
     def skip_track(self):
         self._spotify_endpoint.next_track()
+
+    @property
+    def client(self):
+        return self._spotify_endpoint
 
     def current_playback(self):
         return self._spotify_endpoint.current_playback()

@@ -4,13 +4,16 @@ from neurhon.logging.logger import log as log
 from collections import deque
 from neurhon.server.interfaces import Mood
 import random
-import datetime
+import time
 from threading import Lock
 
 class SongScheduler:
-    def __init__(self):
-        self._spotify_api = sp.SpotifyApi() 
+    def __init__(self, spotify_api=None, on_track_change=None):
+        self._spotify_api = spotify_api or sp.SpotifyApi()
         self._lastfm_api =  lfmp.LastFMApi()
+        # callback(title, author, mood_label) wywoływany po każdym wyborze utworu
+        self.on_track_change = on_track_change
+        self.autopilot = True  # False = scheduler nie wybiera utworów sam (np. trwa przerwa)
         self._song_history = deque(maxlen=50)
         self._mood_history = []
 
@@ -67,6 +70,7 @@ class SongScheduler:
             })
             
             self._spotify_api.play_track(title, author)
+            self._notify_track(title, author, target_mood)
         else:
             log.warning("All candidates were recently played! Clearing history to avoid infinite loop.")
             self._song_history.clear() 
@@ -75,8 +79,15 @@ class SongScheduler:
             author = fallback_track.get_artist().name
             
             self._song_history.append({"title": title, "author": author, "target_mood": target_mood})
-            self._spotify_api.play_track(title, author) 
-        pass
+            self._spotify_api.play_track(title, author)
+            self._notify_track(title, author, target_mood)
+
+    def _notify_track(self, title, author, mood_label):
+        if self.on_track_change:
+            try:
+                self.on_track_change(title, author, mood_label)
+            except Exception as e:
+                log.error(f"on_track_change failed: {e}")
 
     def _calculate_target_mood(self):
         if not self._mood_history:
@@ -91,7 +102,7 @@ class SongScheduler:
         e = sum(m.get('energy', 0.5) for m in recent) / len(recent)
 
         log.debug(f"Averaged metrics - Valence: {v:.2f}, Focus: {f:.2f}, Energy: {e:.2f}")
-        return self._get_mood_label(v, f, e)
+        return self._get_mood_label(f, v, e)
     
     def _get_mood_label(self, f,v,e):
             if f >= 0.65:
@@ -127,10 +138,10 @@ class SongScheduler:
 
         return time_left_ms <= (2 * 1000)
     def get_mood(self):
-        last_mood = None
         with self._mutex:
-            if len(self._mood_history) > 1:
-                last_mood = self._mood_history[-1]
-            else:
-                last_mood = {"valence" : 0, "focus" : 0, "energy" : 0}
-        return Mood(self._get_mood_label(last_mood['valence'],last_mood['focus'],last_mood['energy']),last_mood,0.0)
+            last = self._mood_history[-1] if self._mood_history else None
+        if last is None:
+            return Mood("calibrating", {}, time.time())
+        v, f, e = last.get("valence", 0.5), last.get("focus", 0.5), last.get("energy", 0.5)
+        scores = {"valence": v, "focus": f, "energy": e}
+        return Mood(self._get_mood_label(f, v, e), scores, time.time())

@@ -26,6 +26,8 @@ class SongScheduler:
             "ambient": ["ambient"]
         }
         self._mutex = Lock()
+        self.last_picked = None  # (title, author) ostatnio wybranego utworu, dla optymistycznego UI
+        self._lastfm_api.prewarm(list(self._mood_tags.values()), 200)
 
 
     def update_mood(self, mood_metrics: dict):
@@ -44,7 +46,12 @@ class SongScheduler:
         log.info(f"Target mood established as: {target_mood}")
         target_tags = self._mood_tags.get(target_mood, [target_mood])
         
+        started = time.perf_counter()
         candidates = self._lastfm_api.get_songs_based_on_tag(num_songs=200, tag_list=target_tags)
+        log.info(f"[latency] candidates {time.perf_counter() - started:.2f}s")
+        if not candidates:
+            log.warning(f"No LastFM candidates for tags {target_tags}")
+            return
         random.shuffle(candidates)
 
         recent_played_titles = {song["title"].lower() for song in self._song_history}
@@ -69,6 +76,7 @@ class SongScheduler:
                 "target_mood": target_mood
             })
             
+            self.last_picked = (title, author)
             self._spotify_api.play_track(title, author)
             self._notify_track(title, author, target_mood)
         else:
@@ -79,6 +87,7 @@ class SongScheduler:
             author = fallback_track.get_artist().name
             
             self._song_history.append({"title": title, "author": author, "target_mood": target_mood})
+            self.last_picked = (title, author)
             self._spotify_api.play_track(title, author)
             self._notify_track(title, author, target_mood)
 

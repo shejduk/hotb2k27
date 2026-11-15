@@ -27,13 +27,10 @@ class SpotifyApi:
             log.warning("Empty track id, skipping playback request")
             return
 
-        playback_state = self._spotify_endpoint.current_playback()
-        if playback_state is not None and playback_state.get('is_playing'):
-            self._spotify_endpoint.add_to_queue(track_id)
-            time.sleep(0.7) 
-            self._spotify_endpoint.next_track()
-        else:
-            self._spotify_endpoint.start_playback(uris=[track_id])
+        # jedno żądanie zamiast current_playback + add_to_queue + sleep + next_track
+        started = time.perf_counter()
+        self._spotify_endpoint.start_playback(uris=[track_id])
+        log.info(f"[latency] start_playback {time.perf_counter() - started:.2f}s")
 
 
         log.info(f"Send play request for track {track_id}")
@@ -42,7 +39,9 @@ class SpotifyApi:
 
         log.info(f"Searching for {title} by {author}")
         title = re.sub(r"\(.*?\)|\[.*?\]", "", title).strip()
+        started = time.perf_counter()
         result=self._spotify_endpoint.search(q=f"{author} {title}", limit=1, type='track')
+        log.info(f"[latency] spotify search {time.perf_counter() - started:.2f}s")
         result = result.get("tracks",{}).get("items",{})
         if not result:
             log.info(f"Could not find {author} {title}")

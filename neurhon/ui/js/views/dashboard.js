@@ -90,9 +90,13 @@ function buildPlane() {
 }
 
 async function togglePlay() {
+  const before = state.player;
+  const playing = Boolean(before?.playing);
+  if (before) setPlayer({ ...before, playing: !playing }); // od razu, bez czekania na serwer
   try {
-    setPlayer(await (state.player?.playing ? api.pause() : api.play()));
+    setPlayer(await (playing ? api.pause() : api.play()));
   } catch {
+    if (before) setPlayer(before);
     toast("Could not reach the server.");
   }
 }
